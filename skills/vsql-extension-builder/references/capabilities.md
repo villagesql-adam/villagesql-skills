@@ -78,16 +78,15 @@ the first time, and record results in `.claude/tracking/limitations.md`.
   `UNINSTALL` + `INSTALL` as the upgrade path.
 
 - **REAL-returning functions with integer input.** If the extension includes
-  a `.returns(REAL)` function, test it with an INT column and inspect the
-  result type via `DESCRIBE`. The server's `vdf_handler::fix_fields()` calls
-  `set_data_type_double()` for a REAL-returning VDF specifically to correct
-  this, so a current server should show `double`, not `int` or an
-  unscaled `double(22,0)`, with no caller-side CAST needed — probe before
-  assuming otherwise. If the probe instead shows the old behavior, document
-  the `CAST(col AS DOUBLE)` or `col * 1.0` workaround and record the
-  limitation, but don't carry the workaround forward by habit once a probe
-  against the target server passes clean: this was a server bug, not a
-  permanent SDK limitation.
+  a `.returns(REAL)` function, call it on an INT column (and, if it takes
+  no arguments, with none) in `CREATE TABLE t AS SELECT ...`, then run
+  `SHOW CREATE TABLE t`. VillageSQL 0.0.7 and earlier declare the column
+  `double(22,0)` and round away the fraction. Nightly builds from
+  2026-10-13 and releases after 0.0.7 declare `double`
+  ([villagesql-server#1327](https://github.com/villagesql/villagesql-server/pull/1327)).
+  If the probe shows `double(22,0)`, document
+  the `CAST(col AS DOUBLE)` or `col * 1.0` workaround, record the
+  limitation, and name the server version that fixes it.
 
 - **STRING return size and charset.** Two behaviors affect any function
   returning text. Both change across server versions — probe the running
