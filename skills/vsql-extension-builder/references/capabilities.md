@@ -79,9 +79,15 @@ the first time, and record results in `.claude/tracking/limitations.md`.
 
 - **REAL-returning functions with integer input.** If the extension includes
   a `.returns(REAL)` function, test it with an INT column and inspect the
-  result type via `DESCRIBE`. If it shows INT rather than DOUBLE, document
-  the `CAST(col AS DOUBLE)` or `col * 1.0` workaround, record the limitation,
-  and link [villagesql-server#608](https://github.com/villagesql/villagesql-server/issues/608).
+  result type via `DESCRIBE`. The server's `vdf_handler::fix_fields()` calls
+  `set_data_type_double()` for a REAL-returning VDF specifically to correct
+  this, so a current server should show `double`, not `int` or an
+  unscaled `double(22,0)`, with no caller-side CAST needed — probe before
+  assuming otherwise. If the probe instead shows the old behavior, document
+  the `CAST(col AS DOUBLE)` or `col * 1.0` workaround and record the
+  limitation, but don't carry the workaround forward by habit once a probe
+  against the target server passes clean: this was a server bug, not a
+  permanent SDK limitation.
 
 - **STRING return size and charset.** Two behaviors affect any function
   returning text. Both change across server versions — probe the running
